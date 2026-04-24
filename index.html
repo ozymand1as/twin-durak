@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="style.css">
     
     <!-- QR Code generation (for hosting) -->
-    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     
     <!-- QR Code scanning (for joining/scanning host) -->
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
@@ -28,17 +28,13 @@
         <div id="host-screen" class="screen">
             <h2>Hosting Game</h2>
             <div id="host-step-1" class="step active">
-                <p>Generating Offer...</p>
-                <div id="host-qr-container">
-                    <canvas id="host-qr-canvas"></canvas>
+                <p id="host-loading-txt">Generating Offer...</p>
+                <div id="host-qr-container" class="hidden">
+                    <div id="host-qr"></div>
+                    <p style="margin-top: 10px;">Have the second player scan this code on their device to join.</p>
+                    <p>Once they scan it, they will show you a QR code. Scan their code to finish connecting.</p>
+                    <button id="btn-host-scan-client" class="primary" style="margin-top: 15px;">Scan Client's Code</button>
                 </div>
-                <p>Have the second player scan this code on their device to join.</p>
-            </div>
-            
-            <div id="host-step-2" class="step">
-                <p>Waiting for player to scan your code...</p>
-                <p>Once they scan it, they will show you a QR code. Scan their code to finish connecting.</p>
-                <button id="btn-host-scan-client" class="primary">Scan Client's Code</button>
             </div>
 
             <div id="host-scanner-container" class="scanner-wrapper hidden">
@@ -58,12 +54,12 @@
                 </div>
             </div>
 
-            <div id="join-step-2" class="step">
-                <p>Connection initialized.</p>
-                <div id="join-qr-container">
-                    <canvas id="join-qr-canvas"></canvas>
+            <div id="join-step-2" class="step hidden">
+                <p id="join-loading-txt">Connection initialized.</p>
+                <div id="join-qr-container" class="hidden">
+                    <div id="join-qr"></div>
+                    <p style="margin-top: 10px;">Show this code to the Host so they can scan it.</p>
                 </div>
-                <p>Show this code to the Host so they can scan it.</p>
             </div>
         </div>
 

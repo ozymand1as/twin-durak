@@ -129,11 +129,20 @@ button:disabled {
     width: 100%;
 }
 
-canvas {
+#host-qr, #join-qr {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0 auto;
+    width: 100%;
+}
+
+canvas, img {
     background: white;
     padding: 10px;
     border-radius: 12px;
-    margin: 20px 0;
+    margin: 20px auto;
+    display: block;
 }
 
 /* Game Area */
