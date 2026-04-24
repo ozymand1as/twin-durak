@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Twin Durak</title>
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- QR Code generation (for hosting) -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    
+    <!-- QR Code scanning (for joining/scanning host) -->
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+</head>
+<body>
+    <div id="app">
+        <!-- Main Menu -->
+        <div id="main-menu" class="screen active">
+            <h1>Twin Durak</h1>
+            <p>Play Durak completely offline using local Wi-Fi.</p>
+            <div class="menu-buttons">
+                <button id="btn-host" class="primary">Host Game</button>
+                <button id="btn-join" class="secondary">Join Game</button>
+            </div>
+        </div>
+
+        <!-- Host Screen -->
+        <div id="host-screen" class="screen">
+            <h2>Hosting Game</h2>
+            <div id="host-step-1" class="step active">
+                <p>Generating Offer...</p>
+                <div id="host-qr-container">
+                    <canvas id="host-qr-canvas"></canvas>
+                </div>
+                <p>Have the second player scan this code on their device to join.</p>
+            </div>
+            
+            <div id="host-step-2" class="step">
+                <p>Waiting for player to scan your code...</p>
+                <p>Once they scan it, they will show you a QR code. Scan their code to finish connecting.</p>
+                <button id="btn-host-scan-client" class="primary">Scan Client's Code</button>
+            </div>
+
+            <div id="host-scanner-container" class="scanner-wrapper hidden">
+                <div id="host-scanner"></div>
+                <button id="btn-host-cancel-scan" class="secondary">Cancel Scan</button>
+            </div>
+        </div>
+
+        <!-- Join Screen -->
+        <div id="join-screen" class="screen">
+            <h2>Joining Game</h2>
+            
+            <div id="join-step-1" class="step active">
+                <p>Scan the Host's QR Code.</p>
+                <div id="join-scanner-container" class="scanner-wrapper">
+                    <div id="join-scanner"></div>
+                </div>
+            </div>
+
+            <div id="join-step-2" class="step">
+                <p>Connection initialized.</p>
+                <div id="join-qr-container">
+                    <canvas id="join-qr-canvas"></canvas>
+                </div>
+                <p>Show this code to the Host so they can scan it.</p>
+            </div>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="game-screen" class="screen">
+            <div class="game-board">
+                <div id="opponent-area" class="player-area">
+                    <div class="hand" id="opponent-hand"></div>
+                    <div class="status" id="opponent-status">Waiting...</div>
+                </div>
+                
+                <div id="table-area">
+                    <div id="deck-area">
+                        <div id="trump-card" class="card"></div>
+                        <div id="deck-pile" class="card back"></div>
+                        <div id="cards-left">36</div>
+                    </div>
+                </div>
+
+                <div id="player-area" class="player-area">
+                    <div class="hand" id="player-hand"></div>
+                    <div class="status" id="player-status">Waiting...</div>
+                    <div class="controls">
+                        <button id="btn-take" class="primary hidden">Take Cards</button>
+                        <button id="btn-pass" class="secondary hidden">Pass / Done</button>
+                    </div>
+                </div>
+            </div>
+            <div id="game-overlays">
+                <div id="toast" class="toast hidden"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="main.js" type="module"></script>
+</body>
+</html>

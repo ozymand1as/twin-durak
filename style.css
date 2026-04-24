@@ -1,0 +1,237 @@
+:root {
+    --bg-color: #121212;
+    --surface-color: #1e1e1e;
+    --primary-color: #bb86fc;
+    --primary-variant: #3700b3;
+    --secondary-color: #03dac6;
+    --text-color: #ffffff;
+    --text-muted: #b3b3b3;
+    --error-color: #cf6679;
+    --card-bg: #fff;
+    --card-text: #000;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    line-height: 1.6;
+    overflow: hidden; /* Prevent scrolling, handle it internally if needed */
+}
+
+#app {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.screen {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    padding: 20px;
+    text-align: center;
+}
+
+.screen.active {
+    display: flex;
+}
+
+.step {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+.step.active {
+    display: flex;
+}
+
+h1 {
+    font-size: 3rem;
+    margin-bottom: 10px;
+    background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+h2 {
+    font-size: 2rem;
+    margin-bottom: 20px;
+}
+
+button {
+    padding: 12px 24px;
+    font-size: 1.2rem;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: transform 0.2s, opacity 0.2s;
+    font-weight: bold;
+    outline: none;
+}
+
+button:active {
+    transform: scale(0.95);
+}
+
+button.primary {
+    background-color: var(--primary-color);
+    color: #000;
+}
+
+button.secondary {
+    background-color: transparent;
+    border: 2px solid var(--secondary-color);
+    color: var(--secondary-color);
+}
+
+button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.menu-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-top: 40px;
+    width: 100%;
+    max-width: 300px;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* Scanner */
+.scanner-wrapper {
+    width: 100%;
+    max-width: 400px;
+    background: var(--surface-color);
+    border-radius: 12px;
+    overflow: hidden;
+    margin: 20px 0;
+}
+
+#host-scanner, #join-scanner {
+    width: 100%;
+}
+
+canvas {
+    background: white;
+    padding: 10px;
+    border-radius: 12px;
+    margin: 20px 0;
+}
+
+/* Game Area */
+.game-board {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    justify-content: space-between;
+}
+
+.player-area {
+    height: 25%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+#table-area {
+    height: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    margin: 0 10px;
+}
+
+.hand {
+    display: flex;
+    gap: -40px; /* Overlap cards */
+    padding: 10px;
+    overflow-x: auto;
+    max-width: 100%;
+}
+
+.card {
+    width: 60px;
+    height: 90px;
+    background: var(--card-bg);
+    color: var(--card-text);
+    border-radius: 8px;
+    border: 2px solid #ccc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 1.5rem;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    user-select: none;
+    position: relative;
+    transition: transform 0.2s;
+}
+
+.card.back {
+    background: repeating-linear-gradient(45deg, #1e1e1e, #1e1e1e 10px, #bb86fc 10px, #bb86fc 20px);
+    border: 2px solid white;
+}
+
+#deck-area {
+    position: relative;
+    width: 100px;
+    height: 100px;
+}
+
+#deck-pile {
+    position: absolute;
+    top: 0;
+    left: 20px;
+}
+
+#trump-card {
+    position: absolute;
+    top: 10px;
+    left: 0;
+    transform: rotate(90deg);
+}
+
+#cards-left {
+    position: absolute;
+    bottom: -30px;
+    left: 30px;
+    font-weight: bold;
+    color: var(--text-muted);
+}
+
+.toast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--surface-color);
+    color: white;
+    padding: 12px 24px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    z-index: 1000;
+}
