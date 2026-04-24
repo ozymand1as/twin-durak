@@ -101,16 +101,19 @@ async function startHosting() {
     dataChannel = peerConnection.createDataChannel('durak');
     setupDataChannel(dataChannel);
 
-    peerConnection.onicecandidate = (event) => {
+    peerConnection.onicecandidate = async (event) => {
         if (event.candidate === null) {
             // Gathering complete, show QR
             const offerStr = JSON.stringify(peerConnection.localDescription);
             console.log("Offer len:", offerStr.length);
-            QRCode.toCanvas(els.qr.hostCanvas, offerStr, { width: 300 }, (error) => {
-                if (error) console.error(error);
-                // Allow host to move to scan Client's QR
+            try {
+                await QRCode.toCanvas(els.qr.hostCanvas, offerStr, { width: 300 });
+                els.steps.host1.classList.remove('active');
                 els.steps.host2.classList.add('active');
-            });
+            } catch (error) {
+                console.error("QR formatting error:", error);
+                showToast("Failed to generate QR Code");
+            }
         }
     };
 
@@ -155,15 +158,18 @@ async function startJoining() {
             const offer = JSON.parse(decodedText);
             await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
             
-            peerConnection.onicecandidate = (evt) => {
+            peerConnection.onicecandidate = async (evt) => {
                 if (evt.candidate === null) {
                     const answerStr = JSON.stringify(peerConnection.localDescription);
                     console.log("Answer len:", answerStr.length);
-                    QRCode.toCanvas(els.qr.joinCanvas, answerStr, { width: 300 }, (error) => {
-                        if (error) console.error(error);
+                    try {
+                        await QRCode.toCanvas(els.qr.joinCanvas, answerStr, { width: 300 });
                         els.steps.join1.classList.remove('active');
                         els.steps.join2.classList.add('active');
-                    });
+                    } catch (err) {
+                        console.error("Join QR Error:", err);
+                        showToast("Failed to generate Answer QR");
+                    }
                 }
             };
             const answer = await peerConnection.createAnswer();
