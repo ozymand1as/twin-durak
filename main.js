@@ -71,20 +71,89 @@ function setupDataChannel(channel, isHostConnection) {
 // ... update startHosting and startJoining calls to setupDataChannel
 
 
-async function startScanner(containerId, onScanSuccess) {
+let currentQrInterval = null;
+
+function renderAnimatedQR(containerElement, progressDivElement, payload) {
+    if (currentQrInterval) clearInterval(currentQrInterval); 
+    
+    // Safety chunking mechanism
+    const chunkSize = 150; 
+    const chunks = [];
+    for (let i = 0; i < payload.length; i += chunkSize) {
+        chunks.push(payload.slice(i, i + chunkSize));
+    }
+    
+    const formattedChunks = chunks.map((c, i) => `${i+1}/${chunks.length}:${c}`);
+    let currentIndex = 0;
+    
+    const drawChunk = () => {
+        containerElement.innerHTML = "";
+        new QRCode(containerElement, {
+            text: formattedChunks[currentIndex],
+            width: 350,
+            height: 350,
+            correctLevel: QRCode.CorrectLevel.M
+        });
+        progressDivElement.textContent = `Showing part ${currentIndex + 1} of ${formattedChunks.length}`;
+        currentIndex = (currentIndex + 1) % formattedChunks.length;
+    };
+    
+    drawChunk();
+    if (formattedChunks.length > 1) {
+        currentQrInterval = setInterval(drawChunk, 800);
+    }
+}
+
+async function startScanner(containerId, progressId, onScanSuccess) {
     document.getElementById(containerId).parentElement.classList.remove('hidden');
+    let progressDiv = document.getElementById(progressId);
+    progressDiv.textContent = "Scanning... point camera at QR code.";
+    progressDiv.classList.remove('hidden');
+    
     activeScanner = new Html5Qrcode(containerId);
+    
+    let totalExpected = 0;
+    let collectedChunks = {};
+    
     try {
         await activeScanner.start(
             { facingMode: "environment" },
             { fps: 15 },
             (decodedText) => {
-                stopScanner();
-                document.getElementById(containerId).parentElement.classList.add('hidden');
-                onScanSuccess(decodedText);
+                const match = decodedText.match(/^(\d+)\/(\d+):(.*)$/);
+                if (match) {
+                    const idx = parseInt(match[1]);
+                    totalExpected = parseInt(match[2]);
+                    const data = match[3];
+                    
+                    if (!collectedChunks[idx]) {
+                        collectedChunks[idx] = data;
+                        const count = Object.keys(collectedChunks).length;
+                        progressDiv.textContent = `Captured ${count} of ${totalExpected} parts... Keep scanning!`;
+                        
+                        if (count === totalExpected) {
+                            stopScanner();
+                            document.getElementById(containerId).parentElement.classList.add('hidden');
+                            
+                            let fullString = "";
+                            for(let i=1; i<=totalExpected; i++) fullString += collectedChunks[i];
+                            onComplete(fullString);
+                        }
+                    }
+                } else if (Object.keys(collectedChunks).length === 0) {
+                    // Try to catch unchunked backwards compatibility just in case
+                    stopScanner();
+                    document.getElementById(containerId).parentElement.classList.add('hidden');
+                    onComplete(decodedText);
+                }
             },
-            (err) => { /* scanning */ }
+            (err) => { /* ignore */ }
         );
+        
+        // Hoist the success callback
+        function onComplete(res) {
+            onScanSuccess(res);
+        }
     } catch (err) {
         console.error(err);
         showToast("Camera error: " + err);
@@ -120,16 +189,14 @@ async function startHosting() {
     setTimeout(() => {
         const offerStr = JSON.stringify(peerConnection.localDescription);
         const compressedOffer = LZString.compressToBase64(offerStr);
-        console.log("Original Offer len:", offerStr.length, "Compressed:", compressedOffer.length);
         
         try {
-            els.qr.hostCanvas.innerHTML = "";
-            new QRCode(els.qr.hostCanvas, {
-                text: compressedOffer,
-                width: 450,
-                height: 450,
-                correctLevel: QRCode.CorrectLevel.L
-            });
+            renderAnimatedQR(
+                els.qr.hostCanvas, 
+                document.getElementById('host-qr-progress'), 
+                compressedOffer, 
+                "host"
+            );
             document.getElementById('host-loading-txt').classList.add('hidden');
             document.getElementById('host-qr-container').classList.remove('hidden');
         } catch (error) {
@@ -141,7 +208,9 @@ async function startHosting() {
 
 els.buttons.hostScanClient.addEventListener('click', () => {
     document.getElementById('host-qr-container').classList.add('hidden');
-    startScanner('host-scanner', async (decodedText) => {
+    if (currentQrInterval) clearInterval(currentQrInterval);
+    
+    startScanner('host-scanner', 'host-scan-progress', async (decodedText) => {
         try {
             const decompressed = LZString.decompressFromBase64(decodedText);
             const answer = JSON.parse(decompressed);
@@ -173,7 +242,7 @@ els.buttons.hostScanClient.addEventListener('click', () => {
         setupDataChannel(dataChannel, false);
     };
 
-    startScanner('join-scanner', async (decodedText) => {
+    startScanner('join-scanner', 'join-scan-progress', async (decodedText) => {
         try {
             const decompressed = LZString.decompressFromBase64(decodedText);
             const offer = JSON.parse(decompressed);
@@ -190,13 +259,12 @@ els.buttons.hostScanClient.addEventListener('click', () => {
                 const compressedAnswer = LZString.compressToBase64(answerStr);
                 
                 try {
-                    els.qr.joinCanvas.innerHTML = "";
-                    new QRCode(els.qr.joinCanvas, {
-                        text: compressedAnswer,
-                        width: 450,
-                        height: 450,
-                        correctLevel: QRCode.CorrectLevel.L
-                    });
+                    renderAnimatedQR(
+                        els.qr.joinCanvas, 
+                        document.getElementById('join-qr-progress'), 
+                        compressedAnswer, 
+                        "join"
+                    );
                     document.getElementById('join-loading-txt').classList.add('hidden');
                     document.getElementById('join-qr-container').classList.remove('hidden');
                 } catch (err) {

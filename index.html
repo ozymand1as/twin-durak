@@ -34,6 +34,7 @@
                 <p id="host-loading-txt">Generating Offer...</p>
                 <div id="host-qr-container" class="hidden">
                     <div id="host-qr"></div>
+                    <p id="host-qr-progress" style="font-weight:bold; color:var(--secondary-color);"></p>
                     <p style="margin-top: 10px;">Have the second player scan this code on their device to join.</p>
                     <p>Once they scan it, they will show you a QR code. Scan their code to finish connecting.</p>
                     <button id="btn-host-scan-client" class="primary" style="margin-top: 15px;">Scan Client's Code</button>
@@ -41,6 +42,7 @@
             </div>
 
             <div id="host-scanner-container" class="scanner-wrapper hidden">
+                <p id="host-scan-progress" style="padding:10px; font-weight:bold;"></p>
                 <div id="host-scanner"></div>
                 <button id="btn-host-cancel-scan" class="secondary">Cancel Scan</button>
             </div>
@@ -53,6 +55,7 @@
             <div id="join-step-1" class="step active">
                 <p>Scan the Host's QR Code.</p>
                 <div id="join-scanner-container" class="scanner-wrapper">
+                    <p id="join-scan-progress" style="padding:10px; font-weight:bold;"></p>
                     <div id="join-scanner"></div>
                 </div>
             </div>
@@ -61,6 +64,7 @@
                 <p id="join-loading-txt">Connection initialized.</p>
                 <div id="join-qr-container" class="hidden">
                     <div id="join-qr"></div>
+                    <p id="join-qr-progress" style="font-weight:bold; color:var(--secondary-color);"></p>
                     <p style="margin-top: 10px;">Show this code to the Host so they can scan it.</p>
                 </div>
             </div>
