@@ -267,6 +267,8 @@ els.buttons.hostScanClient.addEventListener('click', () => {
                     );
                     document.getElementById('join-loading-txt').classList.add('hidden');
                     document.getElementById('join-qr-container').classList.remove('hidden');
+                    els.steps.join1.classList.remove('active');
+                    els.steps.join2.classList.add('active');
                 } catch (err) {
                     console.error("Join QR Error:", err);
                     showToast("Failed to generate Answer QR");
