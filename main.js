@@ -77,7 +77,7 @@ async function startScanner(containerId, onScanSuccess) {
     try {
         await activeScanner.start(
             { facingMode: "environment" },
-            { fps: 10, qrbox: { width: 250, height: 250 } },
+            { fps: 15 },
             (decodedText) => {
                 stopScanner();
                 document.getElementById(containerId).parentElement.classList.add('hidden');
@@ -308,12 +308,97 @@ function handleNetworkMessage(msg) {
         GAME.discardSize = msg.payload.discardSize;
         renderGame();
     } else if (msg.type === 'ACTION' && GAME.isHost) {
-        handleClientAction(msg.payload);
+        handleAction(msg.payload, 'client');
     }
 }
 
-function handleClientAction(action) {
-    // To be implemented: host validates action and updates state, then calls syncFullState()
+function handleAction(action, player) {
+    if (action.type === 'PLAY') {
+        const hand = player === 'host' ? GAME.hands.host : GAME.hands.client;
+        const cardIndex = hand.findIndex(c => c.id === action.cardId);
+        if (cardIndex === -1) return;
+        const card = hand[cardIndex];
+
+        const isAttacker = GAME.attacker === player;
+        
+        if (isAttacker) {
+            let canAttack = false;
+            if (GAME.table.length === 0) {
+                canAttack = true; 
+            } else {
+                const allRanks = [];
+                GAME.table.forEach(pair => {
+                    allRanks.push(pair.attack.rank);
+                    if (pair.defense) allRanks.push(pair.defense.rank);
+                });
+                if (allRanks.includes(card.rank)) canAttack = true;
+            }
+            
+            if (canAttack) {
+                hand.splice(cardIndex, 1);
+                GAME.table.push({ attack: card, defense: null });
+                GAME.turn = player === 'host' ? 'client' : 'host'; 
+                syncFullState();
+            }
+        } else {
+            const unbeatenIndex = GAME.table.findIndex(pair => pair.defense === null);
+            if (unbeatenIndex !== -1) {
+                const attackCard = GAME.table[unbeatenIndex].attack;
+                let canBeat = false;
+                const isTrump = card.suit === GAME.trump.suit;
+                const isAttackTrump = attackCard.suit === GAME.trump.suit;
+                
+                if (isTrump && !isAttackTrump) {
+                    canBeat = true;
+                } else if (card.suit === attackCard.suit && card.val > attackCard.val) {
+                    canBeat = true;
+                }
+                
+                if (canBeat) {
+                    hand.splice(cardIndex, 1);
+                    GAME.table[unbeatenIndex].defense = card;
+                    GAME.turn = player === 'host' ? 'client' : 'host'; 
+                    syncFullState();
+                }
+            }
+        }
+    } else if (action.type === 'TAKE') {
+        if (GAME.attacker !== player && GAME.table.length > 0) { 
+            const hand = player === 'host' ? GAME.hands.host : GAME.hands.client;
+            GAME.table.forEach(pair => {
+                hand.push(pair.attack);
+                if (pair.defense) hand.push(pair.defense);
+            });
+            GAME.table = [];
+            replenishHands(GAME.attacker);
+            GAME.turn = GAME.attacker;
+            syncFullState();
+        }
+    } else if (action.type === 'PASS') {
+        if (GAME.attacker === player) { 
+            const allDefended = GAME.table.every(pair => pair.defense !== null);
+            if (allDefended && GAME.table.length > 0) {
+                GAME.discardSize += GAME.table.length * 2;
+                GAME.table = [];
+                replenishHands(GAME.attacker);
+                GAME.attacker = player === 'host' ? 'client' : 'host';
+                GAME.turn = GAME.attacker;
+                syncFullState();
+            }
+        }
+    }
+}
+
+function replenishHands(firstPlayer) {
+    const p1 = firstPlayer;
+    const p2 = firstPlayer === 'host' ? 'client' : 'host';
+    const handsToFill = [p1, p2];
+    for (let p of handsToFill) {
+        const hand = p === 'host' ? GAME.hands.host : GAME.hands.client;
+        while (hand.length < 6 && GAME.deck.length > 0) {
+            hand.push(GAME.deck.pop());
+        }
+    }
 }
 
 // ------ UI RENDERING ------ //
@@ -360,7 +445,36 @@ function renderGame() {
         oppBox.innerHTML += `<div class="card back"></div>`;
     }
 
-    // Render table, deck, trump
+    // Render table cards
+    const playArea = document.getElementById('play-area');
+    if (playArea) {
+        playArea.innerHTML = '';
+        GAME.table.forEach(pair => {
+            let container = document.createElement('div');
+            container.style.position = 'relative';
+            container.style.width = '60px';
+            container.style.height = '110px';
+            
+            let atkCard = document.createElement('div');
+            atkCard.innerHTML = getCardHTML(pair.attack);
+            atkCard.firstElementChild.style.position = 'absolute';
+            atkCard.firstElementChild.style.top = '0';
+            container.appendChild(atkCard.firstElementChild);
+            
+            if (pair.defense) {
+                let defCard = document.createElement('div');
+                defCard.innerHTML = getCardHTML(pair.defense);
+                defCard.firstElementChild.style.position = 'absolute';
+                defCard.firstElementChild.style.top = '20px';
+                defCard.firstElementChild.style.left = '10px';
+                defCard.firstElementChild.style.zIndex = '10';
+                container.appendChild(defCard.firstElementChild);
+            }
+            playArea.appendChild(container);
+        });
+    }
+
+    // Render deck and trump
     const deckSizeStr = GAME.isHost ? GAME.deck.length : GAME.deckSize;
     document.getElementById('cards-left').textContent = deckSizeStr;
     const trumpBox = document.getElementById('trump-card');
@@ -369,16 +483,26 @@ function renderGame() {
     document.getElementById('deck-pile').style.display = deckSizeStr > 0 ? 'block' : 'none';
 
     // Buttons
-    document.getElementById('btn-take').classList.toggle('hidden', myRole === 'Attacker' || !isMyTurn);
-    document.getElementById('btn-pass').classList.toggle('hidden', myRole === 'Defender' || !isMyTurn);
+    document.getElementById('btn-take').classList.toggle('hidden', myRole === 'Attacker' || !isMyTurn || GAME.table.length === 0);
+    document.getElementById('btn-pass').classList.toggle('hidden', myRole === 'Defender' || !isMyTurn || GAME.table.length === 0);
 }
 
 function attemptPlayCard(card) {
     if (GAME.isHost) {
-        // ... process local action
+        handleAction({ type: 'PLAY', cardId: card.id }, 'host');
     } else {
         sendMsg('ACTION', { type: 'PLAY', cardId: card.id });
     }
 }
+
+document.getElementById('btn-take').addEventListener('click', () => {
+    if (GAME.isHost) handleAction({ type: 'TAKE' }, 'host');
+    else sendMsg('ACTION', { type: 'TAKE' });
+});
+
+document.getElementById('btn-pass').addEventListener('click', () => {
+    if (GAME.isHost) handleAction({ type: 'PASS' }, 'host');
+    else sendMsg('ACTION', { type: 'PASS' });
+});
 
 
