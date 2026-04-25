@@ -119,10 +119,13 @@ async function startHosting() {
     // Wait 1 second for local ICE candidates to gather, then generate QR
     setTimeout(() => {
         const offerStr = JSON.stringify(peerConnection.localDescription);
+        const compressedOffer = LZString.compressToBase64(offerStr);
+        console.log("Original Offer len:", offerStr.length, "Compressed:", compressedOffer.length);
+        
         try {
             els.qr.hostCanvas.innerHTML = "";
             new QRCode(els.qr.hostCanvas, {
-                text: offerStr,
+                text: compressedOffer,
                 width: 450,
                 height: 450,
                 correctLevel: QRCode.CorrectLevel.L
@@ -140,7 +143,8 @@ els.buttons.hostScanClient.addEventListener('click', () => {
     document.getElementById('host-qr-container').classList.add('hidden');
     startScanner('host-scanner', async (decodedText) => {
         try {
-            const answer = JSON.parse(decodedText);
+            const decompressed = LZString.decompressFromBase64(decodedText);
+            const answer = JSON.parse(decompressed);
             await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
             showToast("Connecting...");
         } catch(e) {
@@ -171,7 +175,8 @@ els.buttons.hostScanClient.addEventListener('click', () => {
 
     startScanner('join-scanner', async (decodedText) => {
         try {
-            const offer = JSON.parse(decodedText);
+            const decompressed = LZString.decompressFromBase64(decodedText);
+            const offer = JSON.parse(decompressed);
             await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
             
             peerConnection.onicecandidate = (evt) => {
@@ -182,10 +187,12 @@ els.buttons.hostScanClient.addEventListener('click', () => {
 
             setTimeout(() => {
                 const answerStr = JSON.stringify(peerConnection.localDescription);
+                const compressedAnswer = LZString.compressToBase64(answerStr);
+                
                 try {
                     els.qr.joinCanvas.innerHTML = "";
                     new QRCode(els.qr.joinCanvas, {
-                        text: answerStr,
+                        text: compressedAnswer,
                         width: 450,
                         height: 450,
                         correctLevel: QRCode.CorrectLevel.L
