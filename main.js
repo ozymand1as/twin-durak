@@ -123,8 +123,8 @@ async function startHosting() {
             els.qr.hostCanvas.innerHTML = "";
             new QRCode(els.qr.hostCanvas, {
                 text: offerStr,
-                width: 300,
-                height: 300,
+                width: 450,
+                height: 450,
                 correctLevel: QRCode.CorrectLevel.L
             });
             document.getElementById('host-loading-txt').classList.add('hidden');
@@ -186,8 +186,8 @@ els.buttons.hostScanClient.addEventListener('click', () => {
                     els.qr.joinCanvas.innerHTML = "";
                     new QRCode(els.qr.joinCanvas, {
                         text: answerStr,
-                        width: 300,
-                        height: 300,
+                        width: 450,
+                        height: 450,
                         correctLevel: QRCode.CorrectLevel.L
                     });
                     document.getElementById('join-loading-txt').classList.add('hidden');
