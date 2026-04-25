@@ -188,14 +188,13 @@ async function startHosting() {
     // Wait 1 second for local ICE candidates to gather, then generate QR
     setTimeout(() => {
         const offerStr = JSON.stringify(peerConnection.localDescription);
-        const compressedOffer = LZString.compressToBase64(offerStr);
+        const compressedOffer = LZString.compressToEncodedURIComponent(offerStr);
         
         try {
             renderAnimatedQR(
                 els.qr.hostCanvas, 
                 document.getElementById('host-qr-progress'), 
-                compressedOffer, 
-                "host"
+                compressedOffer
             );
             document.getElementById('host-loading-txt').classList.add('hidden');
             document.getElementById('host-qr-container').classList.remove('hidden');
@@ -212,7 +211,8 @@ els.buttons.hostScanClient.addEventListener('click', () => {
     
     startScanner('host-scanner', 'host-scan-progress', async (decodedText) => {
         try {
-            const decompressed = LZString.decompressFromBase64(decodedText);
+            const decompressed = LZString.decompressFromEncodedURIComponent(decodedText);
+            if (!decompressed) throw new Error("Null decompression payload");
             const answer = JSON.parse(decompressed);
             await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
             showToast("Connecting...");
@@ -243,10 +243,19 @@ els.buttons.hostScanClient.addEventListener('click', () => {
     };
 
     startScanner('join-scanner', 'join-scan-progress', async (decodedText) => {
+        els.steps.join1.classList.remove('active');
+        els.steps.join2.classList.add('active');
+        const loadingTxt = document.getElementById('join-loading-txt');
+        loadingTxt.textContent = "Processing Host QR Data...";
+
         try {
-            const decompressed = LZString.decompressFromBase64(decodedText);
+            const decompressed = LZString.decompressFromEncodedURIComponent(decodedText);
+            if (!decompressed) throw new Error("Decompression yielded null");
+            
             const offer = JSON.parse(decompressed);
             await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+            
+            loadingTxt.textContent = "Generating Answer Payload...";
             
             peerConnection.onicecandidate = (evt) => {
                 // Ignore, handled by timeout
@@ -256,26 +265,25 @@ els.buttons.hostScanClient.addEventListener('click', () => {
 
             setTimeout(() => {
                 const answerStr = JSON.stringify(peerConnection.localDescription);
-                const compressedAnswer = LZString.compressToBase64(answerStr);
+                const compressedAnswer = LZString.compressToEncodedURIComponent(answerStr);
                 
                 try {
                     renderAnimatedQR(
                         els.qr.joinCanvas, 
                         document.getElementById('join-qr-progress'), 
-                        compressedAnswer, 
-                        "join"
+                        compressedAnswer
                     );
-                    document.getElementById('join-loading-txt').classList.add('hidden');
+                    loadingTxt.classList.add('hidden');
                     document.getElementById('join-qr-container').classList.remove('hidden');
-                    els.steps.join1.classList.remove('active');
-                    els.steps.join2.classList.add('active');
                 } catch (err) {
                     console.error("Join QR Error:", err);
+                    loadingTxt.textContent = "Error rendering Answer QR";
                     showToast("Failed to generate Answer QR");
                 }
             }, 1000);
         } catch(e) {
             console.error(e);
+            loadingTxt.textContent = "Error: " + e.message;
             showToast("Failed to parse Host's QR code");
         }
     });
